@@ -1,3 +1,57 @@
+def ouvre_dialogue_luminosite():
+    global dialogue_effet, slider_luminosite, origine_matrice_pixel
+    if matrice_pixel is None:
+        return
+    if dialogue_effet is not None and dialogue_effet.winfo_exists():
+        dialogue_effet.lift()
+        return
+    origine_matrice_pixel = matrice_pixel.copy()
+    dialogue_effet = tk.Toplevel(fenetre_principale)
+    dialogue_effet.title("Luminosité")
+    dialogue_effet.geometry("300x150")
+    dialogue_effet.grab_set()
+
+    slider_luminosite = tk.Scale(
+        dialogue_effet,
+        from_=0.05,
+        to=0.95,
+        orient=tk.HORIZONTAL,
+        length=200,
+        resolution=0.01,
+        digits=2,
+        command=correction_gamma,
+    )
+    slider_luminosite.set(0.50)
+    slider_luminosite.pack(pady=20)
+
+    frame_boutons = tk.Frame(dialogue_effet)
+    frame_boutons.pack(side=tk.BOTTOM, pady=10)
+
+    bouton_appliquer = tk.Button(frame_boutons, text="Appliquer", command=applique_effet)
+    bouton_appliquer.pack(side=tk.LEFT, padx=10)
+    bouton_annuler = tk.Button(frame_boutons, text="Annuler", command=annule_effet)
+    bouton_annuler.pack(side=tk.LEFT, padx=10)
+
+    dialogue_effet.protocol("WM_DELETE_WINDOW", annule_effet)
+    dialogue_effet.transient(fenetre_principale)
+
+def applique_effet():
+    global dialogue_effet, origine_matrice_pixel
+    origine_matrice_pixel = None
+    if dialogue_effet is not None and dialogue_effet.winfo_exists():
+        dialogue_effet.destroy()
+        dialogue_effet = None
+
+def annule_effet():
+    global matrice_pixel, dialogue_effet, origine_matrice_pixel
+    if origine_matrice_pixel is not None:
+        matrice_pixel = origine_matrice_pixel
+        rafraichir()
+    origine_matrice_pixel = None
+    if dialogue_effet is not None and dialogue_effet.winfo_exists():
+        dialogue_effet.destroy()
+        dialogue_effet = None
+        
 def filtre_luminosite(m):
     global matrice_pixel, origine_matrice_pixel
     if matrice_pixel is None or origine_matrice_pixel is None:
