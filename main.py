@@ -3,7 +3,6 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
 import PIL as pil
-import sepia
 
 # Définition des variables globales
 matrice_pixel = None
@@ -53,8 +52,13 @@ def charger(container):
 def chargement(event=None):
     return charger(fenetre_principale)
 
+<<<<<<< HEAD
 def filtre_sepia():
     sepia.filtre_sépia(matrice_pixel, rafraichir)
+=======
+def sepia():
+    import sepia
+>>>>>>> 93aa6d60396026fc3c84b3989ef400d224a17689
     
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()
@@ -69,6 +73,6 @@ File_new.bind_all("<Control-O>", chargement)
 
 File_Effets = tk.Menu(menubar, tearoff=False)
 menubar.add_cascade(menu=File_Effets, label="Effets")
-File_Effets.add_command(label="Filtre sépia", command=filtre_sepia)
+File_Effets.add_command(label="Filtre sépia", command=sepia)
 fenetre_principale.config(menu=menubar)
 fenetre_principale.mainloop()
