@@ -4,6 +4,11 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 import PIL as pil
 
+
+matrice_pixel = None
+canvas = None
+image_tk = None
+
 def rafraichir():
     """
     Convertit la matrice NumPy en image Tkinter et met à jour le canvas.

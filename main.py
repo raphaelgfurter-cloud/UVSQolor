@@ -53,9 +53,9 @@ def charger(container):
 def chargement(event=None):
     return charger(fenetre_principale)
 
-def sépia():
-    return sepia.filtre_sépia()
-
+def filtre_sepia():
+    import sepia.filtre_sépia()
+    
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()
 fenetre_principale.title("UVSQolor")
@@ -69,6 +69,6 @@ File_new.bind_all("<Control-O>", chargement)
 
 File_Effets = tk.Menu(menubar, tearoff=False)
 menubar.add_cascade(menu=File_Effets, label="Effets")
-File_Effets.add_command(label="Filtre sépia", command=sépia)
+File_Effets.add_command(label="Filtre sépia", command=filtre_sepia)
 fenetre_principale.config(menu=menubar)
 fenetre_principale.mainloop()
