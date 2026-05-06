@@ -1,3 +1,6 @@
+import tkinter as tk
+import numpy as np
+from main import rafraichir, fenetre_principale
 def ouvre_dialogue_luminosite():
     global dialogue_effet, slider_luminosite, origine_matrice_pixel
     if matrice_pixel is None:

@@ -60,7 +60,8 @@ def filtre_sepia():
     sepia.filtre_sépia(matrice_pixel, rafraichir)
 
 def filtre_luminosite():
-    pass
+    luminosité.filtre_luminosite(matrice_pixel, rafraichir)
+    luminosité.ouvre_dialogue_luminosite()
 
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()
