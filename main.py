@@ -69,6 +69,6 @@ File_new.bind_all("<Control-O>", chargement)
 
 File_Effets = tk.Menu(menubar, tearoff=False)
 menubar.add_cascade(menu=File_Effets, label="Effets")
-File_Effets.add_command(label="Filtre sépia", command=sepia)
+File_Effets.add_command(label="Filtre sépia", command=filtre_sepia)
 fenetre_principale.config(menu=menubar)
 fenetre_principale.mainloop()
