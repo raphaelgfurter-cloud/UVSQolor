@@ -1,6 +1,6 @@
 import numpy as np
 import tkinter as tk
-from tkinter import filedialog
+from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import PIL as pil
 import sepia
@@ -78,12 +78,16 @@ def filtre_sepia():
 
 def filtre_luminosite_b():
     ouvre_dialogue_luminosite()
+
 def filtre_contraste():
     pass
+
 def filtre_flou():
     pass
+
 def filtre_nettete():
     pass
+
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()
 fenetre_principale.title("UVSQolor - Éditeur d'Images")
