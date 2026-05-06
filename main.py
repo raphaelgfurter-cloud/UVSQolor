@@ -3,6 +3,7 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
 import PIL as pil
+import sepia
 
 # Définition des variables globales
 matrice_pixel = None
@@ -52,13 +53,8 @@ def charger(container):
 def chargement(event=None):
     return charger(fenetre_principale)
 
-<<<<<<< HEAD
 def filtre_sepia():
     sepia.filtre_sépia(matrice_pixel, rafraichir)
-=======
-def sepia():
-    import sepia
->>>>>>> 93aa6d60396026fc3c84b3989ef400d224a17689
     
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()
