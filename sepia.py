@@ -24,6 +24,33 @@ def rafraichir():
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
     fenetre_principale.update_idletasks()
 
+def charger(container):
+    """
+    Ouvre un fichier image et initialise la matrice de pixels.
+    """
+    global image_tk, canvas, matrice_pixel
+    nom_fichier = filedialog.askopenfilename(title="Ouvrir une image")
+    if not nom_fichier:
+        return
+
+    img = pil.Image.open(nom_fichier).convert("RGB")
+    matrice_pixel = np.array(img)
+    image_tk = ImageTk.PhotoImage(img)
+
+    if canvas is None:
+        canvas = tk.Canvas(container, width=img.width, height=img.height)
+        canvas.pack()
+    else:
+        canvas.delete("all")
+        canvas.config(width=img.width, height=img.height)
+
+    canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    fenetre_principale.update_idletasks()
+
+def chargement(event=None):
+    return charger(fenetre_principale)
+
+
 def filtre_sépia(event=None):
     global matrice_pixel
     if matrice_pixel is None:
