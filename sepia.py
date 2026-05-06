@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
 import PIL as pil
-
+import main
 
 matrice_pixel = None
 canvas = None
@@ -22,7 +22,7 @@ def rafraichir():
     canvas.delete("all")
     canvas.config(width=img.width, height=img.height)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-    fenetre_principale.update_idletasks()
+    main.fenetre_principale.update_idletasks()
 
 def filtre_sépia(event=None):
     global matrice_pixel
