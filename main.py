@@ -4,7 +4,8 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 import PIL as pil
 import sepia
-import luminosité
+from luminosité import ouvre_dialogue_luminosite, filtre_luminosite
+
 # Définition des variables globales
 matrice_pixel = None
 origine_matrice_pixel = None
@@ -28,7 +29,23 @@ def rafraichir():
     canvas.config(width=img.width, height=img.height)
     canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
     fenetre_principale.update_idletasks()
+# application et annulation d'effet
+def applique_effet():
+    global dialogue_effet, origine_matrice_pixel
+    origine_matrice_pixel = None
+    if dialogue_effet is not None and dialogue_effet.winfo_exists():
+        dialogue_effet.destroy()
+        dialogue_effet = None
 
+def annule_effet():
+    global matrice_pixel, dialogue_effet, origine_matrice_pixel
+    if origine_matrice_pixel is not None:
+        matrice_pixel = origine_matrice_pixel
+        rafraichir()
+    origine_matrice_pixel = None
+    if dialogue_effet is not None and dialogue_effet.winfo_exists():
+        dialogue_effet.destroy()
+        dialogue_effet = None
 # Callbacks
 def charger(container):
     """
@@ -59,24 +76,56 @@ def chargement(event=None):
 def filtre_sepia():
     sepia.filtre_sépia(matrice_pixel, rafraichir)
 
-def filtre_luminosite():
-    luminosité.filtre_luminosite(matrice_pixel, rafraichir)
-    luminosité.ouvre_dialogue_luminosite()
-
+def filtre_luminosite_b():
+    ouvre_dialogue_luminosite()
+def filtre_contraste():
+    pass
+def filtre_flou():
+    pass
+def filtre_nettete():
+    pass
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()
-fenetre_principale.title("UVSQolor")
+fenetre_principale.title("UVSQolor - Éditeur d'Images")
+fenetre_principale.geometry("700x500")
+fenetre_principale.resizable(True, True)
 
+# Création du menu principal
 menubar = tk.Menu()
-File_new = tk.Menu(menubar, tearoff=False)
-menubar.add_cascade(menu=File_new, label="Fichier")
-File_new.add_command(label="Nouveau", accelerator="Ctrl+O", command=chargement)
-File_new.bind_all("<Control-o>", chargement)
-File_new.bind_all("<Control-O>", chargement)
 
+# Menu Fichier
+File_menu = tk.Menu(menubar, tearoff=False)
+menubar.add_cascade(menu=File_menu, label="Fichier")
+File_menu.add_command(label="Ouvrir Image", accelerator="Ctrl+O", command=chargement)
+File_menu.add_separator()
+File_menu.add_command(label="Quitter", accelerator="Ctrl+Q", command=fenetre_principale.quit)
+fenetre_principale.bind_all("<Control-o>", chargement)
+fenetre_principale.bind_all("<Control-q>", lambda e: fenetre_principale.quit())
+
+# Menu Effets
 File_Effets = tk.Menu(menubar, tearoff=False)
 menubar.add_cascade(menu=File_Effets, label="Effets")
-File_Effets.add_command(label="Filtre sépia", command=filtre_sepia)
-File_Effets.add_command(label="Filtre luminosité", command=filtre_luminosite)
+File_Effets.add_command(label="Sépia", command=filtre_sepia)
+File_Effets.add_command(label="Luminosité", command=filtre_luminosite_b)
+File_Effets.add_command(label="Contraste", command=filtre_contraste)
+File_Effets.add_command(label="Flou", command=filtre_flou)
+File_Effets.add_command(label="Netteté", command=filtre_nettete)
+
+# Menu Aide
+File_Aide = tk.Menu(menubar, tearoff=False)
+menubar.add_cascade(menu=File_Aide, label="Aide")
+File_Aide.add_command(
+    label="À propos",
+    command=lambda: messagebox.showinfo(
+        "À propos",
+        "UVSQolor v1.0\n\nÉditeur d'images simple avec filtres\n\n"
+        "Filtres implémentés:\n"
+        "• Luminosité (Correction Gamma)\n"
+        "• Contraste (Gamma pivotée)\n"
+        "• Flou (Convolution)\n"
+        "• Netteté (Unsharp Masking)"
+    )
+)
+
 fenetre_principale.config(menu=menubar)
 fenetre_principale.mainloop()

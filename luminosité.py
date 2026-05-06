@@ -1,6 +1,7 @@
 import tkinter as tk
 import numpy as np
-from main import rafraichir, fenetre_principale
+from main import rafraichir, fenetre_principale, applique_effet, annule_effet, dialogue_effet, matrice_pixel, origine_matrice_pixel
+
 def ouvre_dialogue_luminosite():
     global dialogue_effet, slider_luminosite, origine_matrice_pixel
     if matrice_pixel is None:
@@ -37,23 +38,6 @@ def ouvre_dialogue_luminosite():
 
     dialogue_effet.protocol("WM_DELETE_WINDOW", annule_effet)
     dialogue_effet.transient(fenetre_principale)
-
-def applique_effet():
-    global dialogue_effet, origine_matrice_pixel
-    origine_matrice_pixel = None
-    if dialogue_effet is not None and dialogue_effet.winfo_exists():
-        dialogue_effet.destroy()
-        dialogue_effet = None
-
-def annule_effet():
-    global matrice_pixel, dialogue_effet, origine_matrice_pixel
-    if origine_matrice_pixel is not None:
-        matrice_pixel = origine_matrice_pixel
-        rafraichir()
-    origine_matrice_pixel = None
-    if dialogue_effet is not None and dialogue_effet.winfo_exists():
-        dialogue_effet.destroy()
-        dialogue_effet = None
         
 def filtre_luminosite(m):
     global matrice_pixel, origine_matrice_pixel
