@@ -53,7 +53,7 @@ def chargement(event=None):
     return charger(fenetre_principale)
 
 def sepia():
-    import sepia.py
+    import sepia
     
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()
