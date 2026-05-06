@@ -1,3 +1,24 @@
+import numpy as np
+import tkinter as tk
+from tkinter import filedialog
+from PIL import Image, ImageTk
+import PIL as pil
+
+def rafraichir():
+    """
+    Convertit la matrice NumPy en image Tkinter et met à jour le canvas.
+    """
+    global image_tk, canvas, matrice_pixel
+    if matrice_pixel is None or canvas is None:
+        return
+
+    img = Image.fromarray(matrice_pixel.astype(np.uint8))
+    image_tk = ImageTk.PhotoImage(img)
+    canvas.delete("all")
+    canvas.config(width=img.width, height=img.height)
+    canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    fenetre_principale.update_idletasks()
+
 def filtre_sépia(event=None):
     global matrice_pixel
     if matrice_pixel is None:
