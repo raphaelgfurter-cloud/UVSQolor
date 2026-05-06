@@ -4,7 +4,7 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 import PIL as pil
 import sepia
-
+import luminosité
 # Définition des variables globales
 matrice_pixel = None
 canvas = None
@@ -55,7 +55,10 @@ def chargement(event=None):
 
 def filtre_sepia():
     sepia.filtre_sépia(matrice_pixel, rafraichir)
-    
+
+def filtre_luminosite():
+    pass
+
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()
 fenetre_principale.title("UVSQolor")
@@ -70,5 +73,6 @@ File_new.bind_all("<Control-O>", chargement)
 File_Effets = tk.Menu(menubar, tearoff=False)
 menubar.add_cascade(menu=File_Effets, label="Effets")
 File_Effets.add_command(label="Filtre sépia", command=filtre_sepia)
+File_Effets.add_command(label="Filtre luminosité", command=filtre_luminosite)
 fenetre_principale.config(menu=menubar)
 fenetre_principale.mainloop()
