@@ -54,7 +54,7 @@ def chargement(event=None):
     return charger(fenetre_principale)
 
 def filtre_sepia():
-    return sepia.filtre_sépia()
+    sepia.filtre_sépia(matrice_pixel, rafraichir)
     
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()
