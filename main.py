@@ -4,7 +4,7 @@ from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import PIL as pil
 import sepia
-from luminosité import ouvre_dialogue_luminosite, filtre_luminosite
+
 
 # Définition des variables globales
 matrice_pixel = None
@@ -77,6 +77,7 @@ def filtre_sepia():
     sepia.filtre_sépia(matrice_pixel, rafraichir)
 
 def filtre_luminosite_b():
+    from changement_luminosité import ouvre_dialogue_luminosite
     ouvre_dialogue_luminosite()
 
 def filtre_contraste():
