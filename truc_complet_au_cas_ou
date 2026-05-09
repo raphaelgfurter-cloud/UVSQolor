@@ -62,6 +62,18 @@ def annule_effet():
         dialogue_effet.destroy()
         dialogue_effet = None
 
+def filtre_sepia(event=None):
+    global matrice_pixel
+    if matrice_pixel is None:
+        return
+    img = matrice_pixel.astype(np.float32)
+    # valeur prise de https://fredbl.gitlab.io/algebre-lineaire-et-imagerie-numerique/couleurs.html#conversion-en-sepia
+    transform = np.array([[0.393, 0.769, 0.189],
+                          [0.349, 0.686, 0.168],
+                          [0.272, 0.534, 0.131]], dtype=np.float32)
+    sepia = img.dot(transform.T)
+    matrice_pixel = np.clip(sepia, 0, 255).astype(np.uint8)
+    rafraichir()
 
 def filtre_luminosite(m):
     # Ajuste la luminosité par correction gamma
@@ -466,6 +478,7 @@ fenetre_principale.bind_all("<Control-q>", lambda e: fenetre_principale.quit())
 
 File_Effets = tk.Menu(menubar, tearoff=False)
 menubar.add_cascade(menu=File_Effets, label="Effets")
+File_Effets.add_command(label="Sépia", command=filtre_sepia)
 File_Effets.add_command(label="Luminosité", command=ouvre_dialogue_luminosite)
 File_Effets.add_command(label="Contraste", command=ouvre_dialogue_contraste)
 File_Effets.add_command(label="Flou", command=ouvre_dialogue_flou)
