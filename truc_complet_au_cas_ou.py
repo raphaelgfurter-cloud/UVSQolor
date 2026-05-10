@@ -460,43 +460,44 @@ def chargement(event=None):
     return charger(fenetre_principale)
 
 
-fenetre_principale = tk.Tk()
-fenetre_principale.title("UVSQolor - Éditeur d'Images")
-fenetre_principale.geometry("700x500")
-fenetre_principale.resizable(True, True)
+if __name__ == "__main__":
+    fenetre_principale = tk.Tk()
+    fenetre_principale.title("UVSQolor - Éditeur d'Images")
+    fenetre_principale.geometry("700x500")
+    fenetre_principale.resizable(True, True)
 
-menubar = tk.Menu()
-fenetre_principale.config(menu=menubar)
+    menubar = tk.Menu()
+    fenetre_principale.config(menu=menubar)
 
-File_menu = tk.Menu(menubar, tearoff=False)
-menubar.add_cascade(menu=File_menu, label="Fichier")
-File_menu.add_command(label="Ouvrir Image", accelerator="Ctrl+O", command=chargement)
-File_menu.add_separator()
-File_menu.add_command(label="Quitter", accelerator="Ctrl+Q", command=fenetre_principale.quit)
-fenetre_principale.bind_all("<Control-o>", chargement)
-fenetre_principale.bind_all("<Control-q>", lambda e: fenetre_principale.quit())
+    File_menu = tk.Menu(menubar, tearoff=False)
+    menubar.add_cascade(menu=File_menu, label="Fichier")
+    File_menu.add_command(label="Ouvrir Image", accelerator="Ctrl+O", command=chargement)
+    File_menu.add_separator()
+    File_menu.add_command(label="Quitter", accelerator="Ctrl+Q", command=fenetre_principale.quit)
+    fenetre_principale.bind_all("<Control-o>", chargement)
+    fenetre_principale.bind_all("<Control-q>", lambda e: fenetre_principale.quit())
 
-File_Effets = tk.Menu(menubar, tearoff=False)
-menubar.add_cascade(menu=File_Effets, label="Effets")
-File_Effets.add_command(label="Sépia", command=filtre_sepia)
-File_Effets.add_command(label="Luminosité", command=ouvre_dialogue_luminosite)
-File_Effets.add_command(label="Contraste", command=ouvre_dialogue_contraste)
-File_Effets.add_command(label="Flou", command=ouvre_dialogue_flou)
-File_Effets.add_command(label="Flou Gaussien", command=ouvre_dialogue_flou_gaussien)
-File_Effets.add_command(label="Fusion d'Images", command=ouvre_dialogue_fusion)
-File_Effets.add_command(label="Netteté", command=ouvre_dialogue_nettete)
+    File_Effets = tk.Menu(menubar, tearoff=False)
+    menubar.add_cascade(menu=File_Effets, label="Effets")
+    File_Effets.add_command(label="Sépia", command=filtre_sepia)
+    File_Effets.add_command(label="Luminosité", command=ouvre_dialogue_luminosite)
+    File_Effets.add_command(label="Contraste", command=ouvre_dialogue_contraste)
+    File_Effets.add_command(label="Flou", command=ouvre_dialogue_flou)
+    File_Effets.add_command(label="Flou Gaussien", command=ouvre_dialogue_flou_gaussien)
+    File_Effets.add_command(label="Fusion d'Images", command=ouvre_dialogue_fusion)
+    File_Effets.add_command(label="Netteté", command=ouvre_dialogue_nettete)
 
-File_Aide = tk.Menu(menubar, tearoff=False)
-menubar.add_cascade(menu=File_Aide, label="Aide")
-File_Aide.add_command(label="À propos",
-    command=lambda: messagebox.showinfo("À propos",
-        "UVSQolor v1.0\n\nÉditeur d'images simple avec filtres\n\n"
-        "Filtres implémentés:\n"
-        "• Luminosité (Correction Gamma)\n"
-        "• Contraste (Gamma pivotée)\n"
-        "• Flou (Convolution)\n"
-        "• Netteté (Unsharp Masking)"
+    File_Aide = tk.Menu(menubar, tearoff=False)
+    menubar.add_cascade(menu=File_Aide, label="Aide")
+    File_Aide.add_command(label="À propos",
+        command=lambda: messagebox.showinfo("À propos",
+            "UVSQolor v1.0\n\nÉditeur d'images simple avec filtres\n\n"
+            "Filtres implémentés:\n"
+            "• Luminosité (Correction Gamma)\n"
+            "• Contraste (Gamma pivotée)\n"
+            "• Flou (Convolution)\n"
+            "• Netteté (Unsharp Masking)"
+        )
     )
-)
 
-fenetre_principale.mainloop()
+    fenetre_principale.mainloop()
