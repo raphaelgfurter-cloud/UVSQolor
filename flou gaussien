@@ -1,31 +1,29 @@
-def filtre_flou(rayon=1):
-    # Crée un flou par moyenne arithmétique avec convolution 2D
-    # scipy.signal.convolve2d(): effectue la convolution pixel par pixel avec le kernel (noyau)
-    # kernel: matrice de valeurs égales qui représentent la moyenne local
-    # rayon: nommé pour indiquer qu'il s'agit du rayon de flou (plus grand = plus flou)
+def filtre_flou_gaussien(sigma=1.0):
+    # Applique un flou gaussien avec distribution de Gauss (courbe en cloche)
+    # scipy.ndimage.gaussian_filter(): filtre utilisant le noyau gaussien pour un rendu plus naturel
+    # sigma: écart-type (nommé d'après la notation mathématique grec σ), contrôle l'intensité du flou
+    # sigma plus élevé = flou plus prononcé
     global matrice_pixel, origine_matrice_pixel
     if matrice_pixel is None or origine_matrice_pixel is None:
         return
     try:
-        rayon = int(rayon)
+        sigma = float(sigma)
     except (TypeError, ValueError):
-        rayon = 1
-    rayon = max(1, rayon)
-    taille = 2 * rayon + 1
-    kernel = np.ones((taille, taille)) / (taille * taille)
+        sigma = 1.0
+    sigma = max(0.1, sigma)
     img = origine_matrice_pixel.astype(np.float32)
     result = img.copy()
     for i in range(3):
-        result[:, :, i] = convolve2d(img[:, :, i], kernel, mode='same', boundary='symm')
+        result[:, :, i] = gaussian_filter(img[:, :, i], sigma=sigma)
     matrice_pixel = np.clip(result, 0, 255).astype(np.uint8)
     rafraichir()
 
 
-def correction_flou(rayon):
-    filtre_flou(rayon)
+def correction_flou_gaussien(sigma):
+    filtre_flou_gaussien(sigma)
 
-def ouvre_dialogue_flou():
-    global dialogue_effet, slider_rayon_flou, origine_matrice_pixel
+def ouvre_dialogue_flou_gaussien():
+    global dialogue_effet, slider_sigma_flou_gaussien, origine_matrice_pixel
     if matrice_pixel is None:
         messagebox.showwarning("Attention", "Veuillez d'abord charger une image")
         return
@@ -34,14 +32,14 @@ def ouvre_dialogue_flou():
         return
     origine_matrice_pixel = matrice_pixel.copy()
     dialogue_effet = tk.Toplevel(fenetre_principale)
-    dialogue_effet.title("Flou")
+    dialogue_effet.title("Flou Gaussien")
     dialogue_effet.geometry("300x150")
     dialogue_effet.grab_set()
-    tk.Label(dialogue_effet, text="Rayon de flou:", font=("Arial", 10, "bold")).pack(pady=10)
-    slider_rayon_flou = tk.Scale(dialogue_effet, from_=1, to=10, orient=tk.HORIZONTAL, 
-        length=250, command=correction_flou)
-    slider_rayon_flou.set(1)
-    slider_rayon_flou.pack(pady=10)
+    tk.Label(dialogue_effet, text="Sigma (écart-type):", font=("Arial", 10, "bold")).pack(pady=10)
+    slider_sigma_flou_gaussien = tk.Scale(dialogue_effet, from_=0.1, to=10.0, orient=tk.HORIZONTAL, 
+        length=250, resolution=0.1, digits=1, command=correction_flou_gaussien)
+    slider_sigma_flou_gaussien.set(1.0)
+    slider_sigma_flou_gaussien.pack(pady=10)
     frame_boutons = tk.Frame(dialogue_effet)
     frame_boutons.pack(side=tk.BOTTOM, pady=10)
     tk.Button(frame_boutons, text="Appliquer", command=applique_effet, bg="green", fg="white", padx=15).pack(side=tk.LEFT, padx=10)

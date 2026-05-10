@@ -1,0 +1,50 @@
+def charger_image_fusion():
+    # Charge la deuxième image pour l'effet de fusion
+    # PIL.Image.open(): ouvre le fichier image en tant qu'objet PIL Image
+    # np.array(): convertit l'Image PIL en tableau numpy pour les opérations mathématiques
+    global image_fusion
+    nom_fichier = filedialog.askopenfilename(
+        title="Charger l'image à fusionner",
+        filetypes=[("Images", "*.jpg *.jpeg *.png *.bmp"), ("Tous les fichiers", "*.*")]
+    )
+    if not nom_fichier:
+        return False
+    try:
+        img = Image.open(nom_fichier).convert("RGB")
+        image_fusion = np.array(img)
+        messagebox.showinfo("Succès", f"Image chargée: {img.size}")
+        return True
+    except Exception as e:
+        messagebox.showerror("Erreur", f"Impossible de charger l'image: {e}")
+        return False
+
+
+def filtre_fusion(opacity=0.5):
+    # Fusionne deux images en utilisant une interpolation linéaire (mélange 50/50)
+    # opacity: opacité (nommé pour la transparence même si fixée à 0.5)
+    # Image.Resampling.LANCZOS: méthode de redimensionnement de PIL pour garder la qualité
+    # np.array(): convertit en tableau numpy pour les calculs mathématiques
+    # (1 - opacity) * img1 + opacity * img2: formule de mélange linéaire
+    global matrice_pixel, origine_matrice_pixel, image_fusion
+    if matrice_pixel is None or origine_matrice_pixel is None or image_fusion is None:
+        return
+    opacity = 0.5
+    img1 = origine_matrice_pixel.astype(np.float32)
+    img2 = image_fusion.astype(np.float32)
+    if img1.shape != img2.shape:
+        img2_pil = Image.fromarray(image_fusion)
+        img2_pil = img2_pil.resize((img1.shape[1], img1.shape[0]), Image.Resampling.LANCZOS)
+        img2 = np.array(img2_pil).astype(np.float32)
+    result = (1 - opacity) * img1 + opacity * img2
+    matrice_pixel = np.clip(result, 0, 255).astype(np.uint8)
+    rafraichir()
+def ouvre_dialogue_fusion():
+    global origine_matrice_pixel
+    if matrice_pixel is None:
+        messagebox.showwarning("Attention", "Veuillez d'abord charger une image")
+        return
+    if not charger_image_fusion():
+        return
+    origine_matrice_pixel = matrice_pixel.copy()
+    filtre_fusion()
+    applique_effet()
