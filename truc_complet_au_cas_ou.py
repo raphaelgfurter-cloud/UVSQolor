@@ -1,0 +1,502 @@
+import numpy as np
+import tkinter as tk
+from tkinter import filedialog, messagebox
+from PIL import Image, ImageTk
+from scipy.signal import convolve2d
+from scipy.ndimage import gaussian_filter
+
+# Données
+# matrice_pixel: contient l'image actuelle sous forme de tableau numpy (hauteur × largeur × 3 canaux RGB)
+matrice_pixel = None
+# origine_matrice_pixel: sauvegarde de l'image originale pour pouvoir annuler les effets ou afficher une aperçu
+origine_matrice_pixel = None
+# canvas: widget Tkinter affichant l'image (zone de dessin)
+canvas = None
+# image_tk: objet PhotoImage de Tkinter utilisé pour afficher l'image sur le canvas
+image_tk = None
+# dialogue_effet: référence à la fenêtre de dialogue actuellement ouverte (permet de vérifier si elle existe)
+dialogue_effet = None
+# slider_contraste, slider_pivot, etc.: variables pour les contrôles d'effet (sliders, curseurs)
+# Nommées avec le type "slider_" pour identifier rapidement qu'elles sont des curseurs Tkinter
+slider_contraste = None
+slider_pivot = None
+slider_rayon_flou = None
+slider_intensite_nettete = None
+slider_rayon_nettete = None
+slider_luminosite = None
+slider_sigma_flou_gaussien = None
+# image_fusion: tableau numpy de la deuxième image pour l'effet de fusion
+image_fusion = None
+
+
+def rafraichir():
+    # Convertit l'image numpy en PhotoImage Tkinter et l'affiche sur le canvas
+    # PIL.Image.fromarray(): transforme le tableau numpy en objet Image PIL
+    # ImageTk.PhotoImage(): convertit l'Image PIL en format compatible Tkinter pour l'affichage
+    global image_tk, canvas, matrice_pixel
+    if matrice_pixel is None or canvas is None:
+        return
+    img = Image.fromarray(matrice_pixel.astype(np.uint8))
+    image_tk = ImageTk.PhotoImage(img)
+    canvas.delete("all")
+    canvas.config(width=img.width, height=img.height)
+    canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+    fenetre_principale.update_idletasks()
+
+
+def applique_effet():
+    global dialogue_effet, origine_matrice_pixel
+    origine_matrice_pixel = None
+    if dialogue_effet and dialogue_effet.winfo_exists():
+        dialogue_effet.destroy()
+        dialogue_effet = None
+
+
+def annule_effet():
+    global matrice_pixel, dialogue_effet, origine_matrice_pixel
+    if origine_matrice_pixel is not None:
+        matrice_pixel = origine_matrice_pixel.copy()
+        rafraichir()
+    origine_matrice_pixel = None
+    if dialogue_effet and dialogue_effet.winfo_exists():
+        dialogue_effet.destroy()
+        dialogue_effet = None
+
+def filtre_sepia(event=None):
+    global matrice_pixel
+    if matrice_pixel is None:
+        return
+    img = matrice_pixel.astype(np.float32)
+    # valeur prise de https://fredbl.gitlab.io/algebre-lineaire-et-imagerie-numerique/couleurs.html#conversion-en-sepia
+    transform = np.array([[0.393, 0.769, 0.189],
+                          [0.349, 0.686, 0.168],
+                          [0.272, 0.534, 0.131]], dtype=np.float32)
+    sepia = img.dot(transform.T)
+    matrice_pixel = np.clip(sepia, 0, 255).astype(np.uint8)
+    rafraichir()
+
+def filtre_luminosite(m):
+    # Ajuste la luminosité par correction gamma
+    # gamma = ln(m) / ln(0.5) : formule pour transformer le paramètre d'entrée en exposant
+    # np.power(img / max_value, gamma): élève chaque pixel à la puissance gamma (correction non-linéaire)
+    # m est nommé en une lettre car c'est un paramètre mathématique standard pour la luminosité
+    global matrice_pixel, origine_matrice_pixel
+    if matrice_pixel is None or origine_matrice_pixel is None:
+        return
+    try:
+        m = float(m)
+    except (TypeError, ValueError):
+        return
+    m = np.clip(m, 0.01, 0.99)
+    img = origine_matrice_pixel.astype(np.float32)
+    max_value = float(np.iinfo(origine_matrice_pixel.dtype).max)
+    gamma = np.log(m) / np.log(0.5)
+    matrice_pixel = np.clip(np.power(img / max_value, gamma) * max_value, 0, max_value).astype(origine_matrice_pixel.dtype)
+    rafraichir()
+
+
+def correction_luminosite(m):
+    filtre_luminosite(m)
+
+
+def filtre_contraste(c, p=0.5):
+    # Ajuste le contraste avec correction gamma pivotée
+    # c: paramètre de contraste (-1 à 1), nommé court car c'est l'exposant mathématique
+    # p: point pivot (pivot point), les pixels à ce niveau de gris restent inchangés
+    # np.where(): applique deux formules différentes selon que les pixels sont sombres ou clairs
+    global matrice_pixel, origine_matrice_pixel
+    if matrice_pixel is None or origine_matrice_pixel is None:
+        return
+    try:
+        c = float(c)
+        p = float(p)
+    except (TypeError, ValueError):
+        return
+    p = np.clip(p, 0.001, 0.999)
+    gamma = 2.0 ** c
+    img = origine_matrice_pixel.astype(np.float32)
+    max_value = float(np.iinfo(origine_matrice_pixel.dtype).max)
+    img_norm = img / max_value
+    result = np.where(
+        img_norm <= p,
+        p * np.power(img_norm / p, gamma),
+        1 - (1 - p) * np.power((1 - img_norm) / (1 - p), gamma)
+    )
+    matrice_pixel = np.clip(result * max_value, 0, max_value).astype(origine_matrice_pixel.dtype)
+    rafraichir()
+
+
+def correction_contraste(c):
+    p = slider_pivot.get() if slider_pivot else 0.5
+    filtre_contraste(c, p)
+
+
+def correction_pivot(p):
+    c = slider_contraste.get() if slider_contraste else 0.0
+    filtre_contraste(c, p)
+
+
+def filtre_flou(rayon=1):
+    # Crée un flou par moyenne arithmétique avec convolution 2D
+    # scipy.signal.convolve2d(): effectue la convolution pixel par pixel avec le kernel (noyau)
+    # kernel: matrice de valeurs égales qui représentent la moyenne local
+    # rayon: nommé pour indiquer qu'il s'agit du rayon de flou (plus grand = plus flou)
+    global matrice_pixel, origine_matrice_pixel
+    if matrice_pixel is None or origine_matrice_pixel is None:
+        return
+    try:
+        rayon = int(rayon)
+    except (TypeError, ValueError):
+        rayon = 1
+    rayon = max(1, rayon)
+    taille = 2 * rayon + 1
+    kernel = np.ones((taille, taille)) / (taille * taille)
+    img = origine_matrice_pixel.astype(np.float32)
+    result = img.copy()
+    for i in range(3):
+        result[:, :, i] = convolve2d(img[:, :, i], kernel, mode='same', boundary='symm')
+    matrice_pixel = np.clip(result, 0, 255).astype(np.uint8)
+    rafraichir()
+
+
+def correction_flou(rayon):
+    filtre_flou(rayon)
+
+
+def filtre_flou_gaussien(sigma=1.0):
+    # Applique un flou gaussien avec distribution de Gauss (courbe en cloche)
+    # scipy.ndimage.gaussian_filter(): filtre utilisant le noyau gaussien pour un rendu plus naturel
+    # sigma: écart-type (nommé d'après la notation mathématique grec σ), contrôle l'intensité du flou
+    # sigma plus élevé = flou plus prononcé
+    global matrice_pixel, origine_matrice_pixel
+    if matrice_pixel is None or origine_matrice_pixel is None:
+        return
+    try:
+        sigma = float(sigma)
+    except (TypeError, ValueError):
+        sigma = 1.0
+    sigma = max(0.1, sigma)
+    img = origine_matrice_pixel.astype(np.float32)
+    result = img.copy()
+    for i in range(3):
+        result[:, :, i] = gaussian_filter(img[:, :, i], sigma=sigma)
+    matrice_pixel = np.clip(result, 0, 255).astype(np.uint8)
+    rafraichir()
+
+
+def correction_flou_gaussien(sigma):
+    filtre_flou_gaussien(sigma)
+
+
+def charger_image_fusion():
+    # Charge la deuxième image pour l'effet de fusion
+    # PIL.Image.open(): ouvre le fichier image en tant qu'objet PIL Image
+    # np.array(): convertit l'Image PIL en tableau numpy pour les opérations mathématiques
+    global image_fusion
+    nom_fichier = filedialog.askopenfilename(
+        title="Charger l'image à fusionner",
+        filetypes=[("Images", "*.jpg *.jpeg *.png *.bmp"), ("Tous les fichiers", "*.*")]
+    )
+    if not nom_fichier:
+        return False
+    try:
+        img = Image.open(nom_fichier).convert("RGB")
+        image_fusion = np.array(img)
+        messagebox.showinfo("Succès", f"Image chargée: {img.size}")
+        return True
+    except Exception as e:
+        messagebox.showerror("Erreur", f"Impossible de charger l'image: {e}")
+        return False
+
+
+def filtre_fusion(opacity=0.5):
+    # Fusionne deux images en utilisant une interpolation linéaire (mélange 50/50)
+    # opacity: opacité (nommé pour la transparence même si fixée à 0.5)
+    # Image.Resampling.LANCZOS: méthode de redimensionnement de PIL pour garder la qualité
+    # np.array(): convertit en tableau numpy pour les calculs mathématiques
+    # (1 - opacity) * img1 + opacity * img2: formule de mélange linéaire
+    global matrice_pixel, origine_matrice_pixel, image_fusion
+    if matrice_pixel is None or origine_matrice_pixel is None or image_fusion is None:
+        return
+    opacity = 0.5
+    img1 = origine_matrice_pixel.astype(np.float32)
+    img2 = image_fusion.astype(np.float32)
+    if img1.shape != img2.shape:
+        img2_pil = Image.fromarray(image_fusion)
+        img2_pil = img2_pil.resize((img1.shape[1], img1.shape[0]), Image.Resampling.LANCZOS)
+        img2 = np.array(img2_pil).astype(np.float32)
+    result = (1 - opacity) * img1 + opacity * img2
+    matrice_pixel = np.clip(result, 0, 255).astype(np.uint8)
+    rafraichir()
+
+
+def filtre_nettete(intensite=1.0, rayon_flou=1):
+    # Augmente la netteté par technique d'unsharp masking (masquage flou)
+    # intensite: nommé pour le facteur d'amplification des détails
+    # rayon_flou: rayon du flou utilisé pour extraire les détails (details = image - image_floue)
+    # details = img - img_floue: filtre passe-haut (haute fréquence)
+    # img + intensite * details: amplification des contours pour plus de netteté
+    global matrice_pixel, origine_matrice_pixel
+    if matrice_pixel is None or origine_matrice_pixel is None:
+        return
+    try:
+        intensite = float(intensite)
+        rayon_flou = int(rayon_flou)
+    except (TypeError, ValueError):
+        return
+    rayon_flou = max(1, rayon_flou)
+    intensite = np.clip(intensite, 0, 3.0)
+    taille = 2 * rayon_flou + 1
+    kernel = np.ones((taille, taille)) / (taille * taille)
+    img = origine_matrice_pixel.astype(np.float32)
+    img_floue = img.copy()
+    for i in range(3):
+        img_floue[:, :, i] = convolve2d(img[:, :, i], kernel, mode='same', boundary='symm')
+    details = img - img_floue
+    result = img + intensite * details
+    matrice_pixel = np.clip(result, 0, 255).astype(np.uint8)
+    rafraichir()
+
+
+def correction_nettete(intensite):
+    rayon = slider_rayon_nettete.get() if slider_rayon_nettete else 1
+    filtre_nettete(intensite, rayon)
+
+
+def correction_rayon_nettete(rayon):
+    intensite = slider_intensite_nettete.get() if slider_intensite_nettete else 1.0
+    filtre_nettete(intensite, rayon)
+
+
+
+def ouvre_dialogue_luminosite():
+    # Crée une fenêtre de dialogue Tkinter (tk.Toplevel) avec un slider (curseur)
+    # tk.Toplevel(): crée une nouvelle fenêtre de dialogue indépendante
+    # tk.Scale(): widget Tkinter pour slider/curseur avec valeurs numériques
+    # command=correction_luminosite: lie le slider à la fonction de rappel (callback)
+    # grab_set(): rend la fenêtre modale (on ne peut interagir que avec elle)
+    global dialogue_effet, slider_luminosite, origine_matrice_pixel
+    if matrice_pixel is None:
+        messagebox.showwarning("Attention", "Veuillez d'abord charger une image")
+        return
+    if dialogue_effet and dialogue_effet.winfo_exists():
+        dialogue_effet.lift()
+        return
+    origine_matrice_pixel = matrice_pixel.copy()
+    dialogue_effet = tk.Toplevel(fenetre_principale)
+    dialogue_effet.title("Luminosité")
+    dialogue_effet.geometry("300x150")
+    dialogue_effet.grab_set()
+    slider_luminosite = tk.Scale(dialogue_effet, from_=0.05, to=0.95, orient=tk.HORIZONTAL, 
+        length=200, resolution=0.01, digits=2, command=correction_luminosite)
+    slider_luminosite.set(0.50)
+    slider_luminosite.pack(pady=20)
+    frame_boutons = tk.Frame(dialogue_effet)
+    frame_boutons.pack(side=tk.BOTTOM, pady=10)
+    tk.Button(frame_boutons, text="Appliquer", command=applique_effet, bg="green", fg="white", padx=15).pack(side=tk.LEFT, padx=10)
+    tk.Button(frame_boutons, text="Annuler", command=annule_effet, bg="red", fg="white", padx=15).pack(side=tk.LEFT, padx=10)
+    dialogue_effet.protocol("WM_DELETE_WINDOW", annule_effet)
+    dialogue_effet.transient(fenetre_principale)
+
+
+def ouvre_dialogue_contraste():
+    global dialogue_effet, slider_contraste, slider_pivot, origine_matrice_pixel
+    if matrice_pixel is None:
+        messagebox.showwarning("Attention", "Veuillez d'abord charger une image")
+        return
+    if dialogue_effet and dialogue_effet.winfo_exists():
+        dialogue_effet.lift()
+        return
+    origine_matrice_pixel = matrice_pixel.copy()
+    dialogue_effet = tk.Toplevel(fenetre_principale)
+    dialogue_effet.title("Contraste")
+    dialogue_effet.geometry("350x220")
+    dialogue_effet.grab_set()
+    tk.Label(dialogue_effet, text="Contraste:", font=("Arial", 10, "bold")).pack(pady=5)
+    slider_contraste = tk.Scale(dialogue_effet, from_=-1.0, to=1.0, orient=tk.HORIZONTAL, 
+        length=300, resolution=0.01, digits=2, command=correction_contraste)
+    slider_contraste.set(0.0)
+    slider_contraste.pack(pady=10)
+    tk.Label(dialogue_effet, text="Pivot:", font=("Arial", 10, "bold")).pack(pady=5)
+    slider_pivot = tk.Scale(dialogue_effet, from_=0.1, to=0.9, orient=tk.HORIZONTAL, 
+        length=300, resolution=0.01, digits=2, command=correction_pivot)
+    slider_pivot.set(0.5)
+    slider_pivot.pack(pady=10)
+    frame_boutons = tk.Frame(dialogue_effet)
+    frame_boutons.pack(side=tk.BOTTOM, pady=10)
+    tk.Button(frame_boutons, text="Appliquer", command=applique_effet, bg="green", fg="white", padx=15).pack(side=tk.LEFT, padx=10)
+    tk.Button(frame_boutons, text="Annuler", command=annule_effet, bg="red", fg="white", padx=15).pack(side=tk.LEFT, padx=10)
+    dialogue_effet.protocol("WM_DELETE_WINDOW", annule_effet)
+    dialogue_effet.transient(fenetre_principale)
+
+
+def ouvre_dialogue_flou():
+    global dialogue_effet, slider_rayon_flou, origine_matrice_pixel
+    if matrice_pixel is None:
+        messagebox.showwarning("Attention", "Veuillez d'abord charger une image")
+        return
+    if dialogue_effet and dialogue_effet.winfo_exists():
+        dialogue_effet.lift()
+        return
+    origine_matrice_pixel = matrice_pixel.copy()
+    dialogue_effet = tk.Toplevel(fenetre_principale)
+    dialogue_effet.title("Flou")
+    dialogue_effet.geometry("300x150")
+    dialogue_effet.grab_set()
+    tk.Label(dialogue_effet, text="Rayon de flou:", font=("Arial", 10, "bold")).pack(pady=10)
+    slider_rayon_flou = tk.Scale(dialogue_effet, from_=1, to=10, orient=tk.HORIZONTAL, 
+        length=250, command=correction_flou)
+    slider_rayon_flou.set(1)
+    slider_rayon_flou.pack(pady=10)
+    frame_boutons = tk.Frame(dialogue_effet)
+    frame_boutons.pack(side=tk.BOTTOM, pady=10)
+    tk.Button(frame_boutons, text="Appliquer", command=applique_effet, bg="green", fg="white", padx=15).pack(side=tk.LEFT, padx=10)
+    tk.Button(frame_boutons, text="Annuler", command=annule_effet, bg="red", fg="white", padx=15).pack(side=tk.LEFT, padx=10)
+    dialogue_effet.protocol("WM_DELETE_WINDOW", annule_effet)
+    dialogue_effet.transient(fenetre_principale)
+
+
+def ouvre_dialogue_flou_gaussien():
+    global dialogue_effet, slider_sigma_flou_gaussien, origine_matrice_pixel
+    if matrice_pixel is None:
+        messagebox.showwarning("Attention", "Veuillez d'abord charger une image")
+        return
+    if dialogue_effet and dialogue_effet.winfo_exists():
+        dialogue_effet.lift()
+        return
+    origine_matrice_pixel = matrice_pixel.copy()
+    dialogue_effet = tk.Toplevel(fenetre_principale)
+    dialogue_effet.title("Flou Gaussien")
+    dialogue_effet.geometry("300x150")
+    dialogue_effet.grab_set()
+    tk.Label(dialogue_effet, text="Sigma (écart-type):", font=("Arial", 10, "bold")).pack(pady=10)
+    slider_sigma_flou_gaussien = tk.Scale(dialogue_effet, from_=0.1, to=10.0, orient=tk.HORIZONTAL, 
+        length=250, resolution=0.1, digits=1, command=correction_flou_gaussien)
+    slider_sigma_flou_gaussien.set(1.0)
+    slider_sigma_flou_gaussien.pack(pady=10)
+    frame_boutons = tk.Frame(dialogue_effet)
+    frame_boutons.pack(side=tk.BOTTOM, pady=10)
+    tk.Button(frame_boutons, text="Appliquer", command=applique_effet, bg="green", fg="white", padx=15).pack(side=tk.LEFT, padx=10)
+    tk.Button(frame_boutons, text="Annuler", command=annule_effet, bg="red", fg="white", padx=15).pack(side=tk.LEFT, padx=10)
+    dialogue_effet.protocol("WM_DELETE_WINDOW", annule_effet)
+    dialogue_effet.transient(fenetre_principale)
+
+
+def ouvre_dialogue_fusion():
+    global origine_matrice_pixel
+    if matrice_pixel is None:
+        messagebox.showwarning("Attention", "Veuillez d'abord charger une image")
+        return
+    if not charger_image_fusion():
+        return
+    origine_matrice_pixel = matrice_pixel.copy()
+    filtre_fusion()
+    applique_effet()
+
+
+def ouvre_dialogue_nettete():
+    global dialogue_effet, slider_intensite_nettete, slider_rayon_nettete, origine_matrice_pixel
+    if matrice_pixel is None:
+        messagebox.showwarning("Attention", "Veuillez d'abord charger une image")
+        return
+    if dialogue_effet and dialogue_effet.winfo_exists():
+        dialogue_effet.lift()
+        return
+    origine_matrice_pixel = matrice_pixel.copy()
+    dialogue_effet = tk.Toplevel(fenetre_principale)
+    dialogue_effet.title("Netteté")
+    dialogue_effet.geometry("350x220")
+    dialogue_effet.grab_set()
+    tk.Label(dialogue_effet, text="Intensité:", font=("Arial", 10, "bold")).pack(pady=5)
+    slider_intensite_nettete = tk.Scale(dialogue_effet, from_=0.0, to=3.0, orient=tk.HORIZONTAL, 
+        length=300, resolution=0.1, digits=1, command=correction_nettete)
+    slider_intensite_nettete.set(1.0)
+    slider_intensite_nettete.pack(pady=10)
+    tk.Label(dialogue_effet, text="Rayon de flou:", font=("Arial", 10, "bold")).pack(pady=5)
+    slider_rayon_nettete = tk.Scale(dialogue_effet, from_=1, to=5, orient=tk.HORIZONTAL, 
+        length=300, command=correction_rayon_nettete)
+    slider_rayon_nettete.set(1)
+    slider_rayon_nettete.pack(pady=10)
+    frame_boutons = tk.Frame(dialogue_effet)
+    frame_boutons.pack(side=tk.BOTTOM, pady=10)
+    tk.Button(frame_boutons, text="Appliquer", command=applique_effet, bg="green", fg="white", padx=15).pack(side=tk.LEFT, padx=10)
+    tk.Button(frame_boutons, text="Annuler", command=annule_effet, bg="red", fg="white", padx=15).pack(side=tk.LEFT, padx=10)
+    dialogue_effet.protocol("WM_DELETE_WINDOW", annule_effet)
+    dialogue_effet.transient(fenetre_principale)
+
+
+
+def charger(container):
+    # Charge une image depuis le disque et l'affiche
+    # PIL.Image.open().convert("RGB"): ouvre le fichier et le convertit en format RGB (3 canaux)
+    # np.array(): transforme l'Image PIL en tableau numpy pour traitement
+    # ImageTk.PhotoImage(): convertit en format compatible avec les widgets Tkinter
+    # canvas: widget Tkinter (zone de dessin) qui affiche l'image
+    global image_tk, canvas, matrice_pixel
+    nom_fichier = filedialog.askopenfilename(
+        title="Ouvrir une image",
+        filetypes=[("Images", "*.jpg *.jpeg *.png *.bmp"), ("Tous les fichiers", "*.*")]
+    )
+    if not nom_fichier:
+        return
+    try:
+        img = Image.open(nom_fichier).convert("RGB")
+        matrice_pixel = np.array(img)
+        image_tk = ImageTk.PhotoImage(img)
+        if canvas is None:
+            canvas = tk.Canvas(container, width=img.width, height=img.height, bg="gray")
+            canvas.pack()
+        else:
+            canvas.delete("all")
+            canvas.config(width=img.width, height=img.height)
+        canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+        fenetre_principale.update_idletasks()
+        messagebox.showinfo("Succès", "Image chargée avec succès")
+    except Exception as e:
+        messagebox.showerror("Erreur", f"Impossible de charger l'image: {e}")
+
+
+def chargement(event=None):
+    return charger(fenetre_principale)
+
+
+fenetre_principale = tk.Tk()
+fenetre_principale.title("UVSQolor - Éditeur d'Images")
+fenetre_principale.geometry("700x500")
+fenetre_principale.resizable(True, True)
+
+menubar = tk.Menu()
+fenetre_principale.config(menu=menubar)
+
+File_menu = tk.Menu(menubar, tearoff=False)
+menubar.add_cascade(menu=File_menu, label="Fichier")
+File_menu.add_command(label="Ouvrir Image", accelerator="Ctrl+O", command=chargement)
+File_menu.add_separator()
+File_menu.add_command(label="Quitter", accelerator="Ctrl+Q", command=fenetre_principale.quit)
+fenetre_principale.bind_all("<Control-o>", chargement)
+fenetre_principale.bind_all("<Control-q>", lambda e: fenetre_principale.quit())
+
+File_Effets = tk.Menu(menubar, tearoff=False)
+menubar.add_cascade(menu=File_Effets, label="Effets")
+File_Effets.add_command(label="Sépia", command=filtre_sepia)
+File_Effets.add_command(label="Luminosité", command=ouvre_dialogue_luminosite)
+File_Effets.add_command(label="Contraste", command=ouvre_dialogue_contraste)
+File_Effets.add_command(label="Flou", command=ouvre_dialogue_flou)
+File_Effets.add_command(label="Flou Gaussien", command=ouvre_dialogue_flou_gaussien)
+File_Effets.add_command(label="Fusion d'Images", command=ouvre_dialogue_fusion)
+File_Effets.add_command(label="Netteté", command=ouvre_dialogue_nettete)
+
+File_Aide = tk.Menu(menubar, tearoff=False)
+menubar.add_cascade(menu=File_Aide, label="Aide")
+File_Aide.add_command(label="À propos",
+    command=lambda: messagebox.showinfo("À propos",
+        "UVSQolor v1.0\n\nÉditeur d'images simple avec filtres\n\n"
+        "Filtres implémentés:\n"
+        "• Luminosité (Correction Gamma)\n"
+        "• Contraste (Gamma pivotée)\n"
+        "• Flou (Convolution)\n"
+        "• Netteté (Unsharp Masking)"
+    )
+)
+
+fenetre_principale.mainloop()
