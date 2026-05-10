@@ -3,8 +3,13 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import PIL as pil
-import sepia
-
+from truc_complet_au_cas_ou import (
+    filtre_sepia, filtre_luminosite, filtre_contraste, 
+    filtre_flou, filtre_flou_gaussien, filtre_nettete, filtre_fusion,
+    ouvre_dialogue_luminosite, ouvre_dialogue_contraste, 
+    ouvre_dialogue_flou, ouvre_dialogue_flou_gaussien,
+    ouvre_dialogue_fusion, ouvre_dialogue_nettete
+)
 
 # Définition des variables globales
 matrice_pixel = None
@@ -52,42 +57,45 @@ def charger(container):
     Ouvre un fichier image et initialise la matrice de pixels.
     """
     global image_tk, canvas, matrice_pixel
-    nom_fichier = filedialog.askopenfilename(title="Ouvrir une image")
+    nom_fichier = filedialog.askopenfilename(
+        title="Ouvrir une image",
+        filetypes=[("Images", "*.jpg *.jpeg *.png *.bmp"), ("Tous les fichiers", "*.*")]
+    )
     if not nom_fichier:
         return
-
-    img = pil.Image.open(nom_fichier).convert("RGB")
-    matrice_pixel = np.array(img)
-    image_tk = ImageTk.PhotoImage(img)
-
-    if canvas is None:
-        canvas = tk.Canvas(container, width=img.width, height=img.height)
-        canvas.pack()
-    else:
-        canvas.delete("all")
-        canvas.config(width=img.width, height=img.height)
-
-    canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
-    fenetre_principale.update_idletasks()
+    try:
+        img = Image.open(nom_fichier).convert("RGB")
+        matrice_pixel = np.array(img)
+        image_tk = ImageTk.PhotoImage(img)
+        if canvas is None:
+            canvas = tk.Canvas(container, width=img.width, height=img.height, bg="gray")
+            canvas.pack()
+        else:
+            canvas.delete("all")
+            canvas.config(width=img.width, height=img.height)
+        canvas.create_image(0, 0, anchor=tk.NW, image=image_tk)
+        fenetre_principale.update_idletasks()
+        messagebox.showinfo("Succès", "Image chargée avec succès")
+    except Exception as e:
+        messagebox.showerror("Erreur", f"Impossible de charger l'image: {e}")
 
 def chargement(event=None):
     return charger(fenetre_principale)
 
 def filtre_sepia():
-    sepia.filtre_sépia(matrice_pixel, rafraichir)
+    applique_filtre_sepia()
 
 def filtre_luminosite_b():
-    from changement_luminosité import ouvre_dialogue_luminosite
     ouvre_dialogue_luminosite()
 
 def filtre_contraste():
-    pass
+    ouvre_dialogue_contraste()
 
 def filtre_flou():
-    pass
+    applique_filtre_flou()
 
 def filtre_nettete():
-    pass
+    applique_filtre_nettete()
 
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()

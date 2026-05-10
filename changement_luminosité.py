@@ -1,6 +1,6 @@
 import tkinter as tk
 import numpy as np
-from main import rafraichir, fenetre_principale, applique_effet, annule_effet, dialogue_effet, matrice_pixel, origine_matrice_pixel
+from main import rafraichir, fenetre_principale, applique_effet, annule_effet, dialogue_effet, matrice_pixel, origine_matrice_pixel, slider_luminosite
 
 def ouvre_dialogue_luminosite():
     global dialogue_effet, slider_luminosite, origine_matrice_pixel
