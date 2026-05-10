@@ -3,7 +3,7 @@ import tkinter as tk
 from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import PIL as pil
-import truc_complet_au_cas_ou as tcc
+import fonctions_complete as fc
 
 # Définition des variables globales
 matrice_pixel = None
@@ -19,30 +19,30 @@ def rafraichir():
     Convertit la matrice NumPy en image Tkinter et met à jour le canvas.
     """
     global image_tk, canvas, matrice_pixel
-    if tcc.matrice_pixel is None or tcc.canvas is None:
+    if fc.matrice_pixel is None or fc.canvas is None:
         return
 
-    img = Image.fromarray(tcc.matrice_pixel.astype(np.uint8))
-    tcc.image_tk = ImageTk.PhotoImage(img)
-    tcc.canvas.delete("all")
-    tcc.canvas.config(width=img.width, height=img.height)
-    tcc.canvas.create_image(0, 0, anchor=tk.NW, image=tcc.image_tk)
+    img = Image.fromarray(fc.matrice_pixel.astype(np.uint8))
+    fc.image_tk = ImageTk.PhotoImage(img)
+    fc.canvas.delete("all")
+    fc.canvas.config(width=img.width, height=img.height)
+    fc.canvas.create_image(0, 0, anchor=tk.NW, image=fc.image_tk)
     fenetre_principale.update_idletasks()
 # application et annulation d'effet
 def applique_effet():
-    tcc.origine_matrice_pixel = None
-    if tcc.dialogue_effet is not None and tcc.dialogue_effet.winfo_exists():
-        tcc.dialogue_effet.destroy()
-        tcc.dialogue_effet = None
+    fc.origine_matrice_pixel = None
+    if fc.dialogue_effet is not None and fc.dialogue_effet.winfo_exists():
+        fc.dialogue_effet.destroy()
+        fc.dialogue_effet = None
 
 def annule_effet():
-    if tcc.origine_matrice_pixel is not None:
-        tcc.matrice_pixel = tcc.origine_matrice_pixel.copy()
+    if fc.origine_matrice_pixel is not None:
+        fc.matrice_pixel = fc.origine_matrice_pixel.copy()
         rafraichir()
-    tcc.origine_matrice_pixel = None
-    if tcc.dialogue_effet is not None and tcc.dialogue_effet.winfo_exists():
-        tcc.dialogue_effet.destroy()
-        tcc.dialogue_effet = None
+    fc.origine_matrice_pixel = None
+    if fc.dialogue_effet is not None and fc.dialogue_effet.winfo_exists():
+        fc.dialogue_effet.destroy()
+        fc.dialogue_effet = None
 # Callbacks
 def charger(container):
     """
@@ -56,15 +56,15 @@ def charger(container):
         return
     try:
         img = Image.open(nom_fichier).convert("RGB")
-        tcc.matrice_pixel = np.array(img)
-        tcc.image_tk = ImageTk.PhotoImage(img)
-        if tcc.canvas is None:
-            tcc.canvas = tk.Canvas(container, width=img.width, height=img.height, bg="gray")
-            tcc.canvas.pack()
+        fc.matrice_pixel = np.array(img)
+        fc.image_tk = ImageTk.PhotoImage(img)
+        if fc.canvas is None:
+            fc.canvas = tk.Canvas(container, width=img.width, height=img.height, bg="gray")
+            fc.canvas.pack()
         else:
-            tcc.canvas.delete("all")
-            tcc.canvas.config(width=img.width, height=img.height)
-        tcc.canvas.create_image(0, 0, anchor=tk.NW, image=tcc.image_tk)
+            fc.canvas.delete("all")
+            fc.canvas.config(width=img.width, height=img.height)
+        fc.canvas.create_image(0, 0, anchor=tk.NW, image=fc.image_tk)
         fenetre_principale.update_idletasks()
         messagebox.showinfo("Succès", "Image chargée avec succès")
     except Exception as e:
@@ -74,25 +74,25 @@ def chargement(event=None):
     return charger(fenetre_principale)
 
 def filtre_sepia_callback():
-    tcc.filtre_sepia()
+    fc.filtre_sepia()
 
 def filtre_luminosite_callback():
-    tcc.ouvre_dialogue_luminosite()
+    fc.ouvre_dialogue_luminosite()
 
 def filtre_contraste_callback():
-    tcc.ouvre_dialogue_contraste()
+    fc.ouvre_dialogue_contraste()
 
 def filtre_flou_callback():
-    tcc.ouvre_dialogue_flou()
+    fc.ouvre_dialogue_flou()
 
 def filtre_nettete_callback():
-    tcc.ouvre_dialogue_nettete()
+    fc.ouvre_dialogue_nettete()
 
 def filtre_flou_gaussien_callback():
-    tcc.ouvre_dialogue_flou_gaussien()
+    fc.ouvre_dialogue_flou_gaussien()
 
 def filtre_fusion_callback():
-    tcc.ouvre_dialogue_fusion()
+    fc.ouvre_dialogue_fusion()
 
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()
@@ -100,11 +100,11 @@ fenetre_principale.title("UVSQolor - Éditeur d'Images")
 fenetre_principale.geometry("700x500")
 fenetre_principale.resizable(True, True)
 
-# Initialiser les variables globales du module tcc pour qu'elles pointent vers main
-tcc.fenetre_principale = fenetre_principale
-tcc.rafraichir = rafraichir
-tcc.applique_effet = applique_effet
-tcc.annule_effet = annule_effet
+# Initialiser les variables globales du module fc pour qu'elles pointent vers main
+fc.fenetre_principale = fenetre_principale
+fc.rafraichir = rafraichir
+fc.applique_effet = applique_effet
+fc.annule_effet = annule_effet
 
 # Création du menu principal
 menubar = tk.Menu()
