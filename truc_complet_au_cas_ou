@@ -17,7 +17,7 @@ image_tk = None
 # dialogue_effet: référence à la fenêtre de dialogue actuellement ouverte (permet de vérifier si elle existe)
 dialogue_effet = None
 # slider_contraste, slider_pivot, etc.: variables pour les contrôles d'effet (sliders, curseurs)
-# Nommées avec le type "slider_" pour identifier rapidement qu'elles sont des curseurs Tkinter
+# Nommées avec le type "slider_" pour identifier rapidement qu'elles sont les curseurs Tkinter pour chaque effets
 slider_contraste = None
 slider_pivot = None
 slider_rayon_flou = None

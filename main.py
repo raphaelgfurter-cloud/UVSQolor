@@ -4,13 +4,6 @@ from tkinter import filedialog, messagebox
 from PIL import Image, ImageTk
 import PIL as pil
 import truc_complet_au_cas_ou as tcc
-from truc_complet_au_cas_ou import (
-    filtre_sepia, filtre_luminosite, filtre_contraste, 
-    filtre_flou, filtre_flou_gaussien, filtre_nettete, filtre_fusion,
-    ouvre_dialogue_luminosite, ouvre_dialogue_contraste, 
-    ouvre_dialogue_flou, ouvre_dialogue_flou_gaussien,
-    ouvre_dialogue_fusion, ouvre_dialogue_nettete
-)
 
 # Définition des variables globales
 matrice_pixel = None
@@ -81,25 +74,25 @@ def chargement(event=None):
     return charger(fenetre_principale)
 
 def filtre_sepia_callback():
-    filtre_sepia()
+    tcc.filtre_sepia()
 
 def filtre_luminosite_callback():
-    ouvre_dialogue_luminosite()
+    tcc.ouvre_dialogue_luminosite()
 
 def filtre_contraste_callback():
-    ouvre_dialogue_contraste()
+    tcc.ouvre_dialogue_contraste()
 
 def filtre_flou_callback():
-    ouvre_dialogue_flou()
+    tcc.ouvre_dialogue_flou()
 
 def filtre_nettete_callback():
-    ouvre_dialogue_nettete()
+    tcc.ouvre_dialogue_nettete()
 
 def filtre_flou_gaussien_callback():
-    ouvre_dialogue_flou_gaussien()
+    tcc.ouvre_dialogue_flou_gaussien()
 
 def filtre_fusion_callback():
-    ouvre_dialogue_fusion()
+    tcc.ouvre_dialogue_fusion()
 
 # Création de la fenêtre principale
 fenetre_principale = tk.Tk()
