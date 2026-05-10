@@ -138,10 +138,13 @@ File_Aide.add_command(
         "À propos",
         "UVSQolor v1.0\n\nÉditeur d'images simple avec filtres\n\n"
         "Filtres implémentés:\n"
+        "• Filtre Sépia (effet vieux)"
         "• Luminosité (Correction Gamma)\n"
         "• Contraste (Gamma pivotée)\n"
         "• Flou (Convolution)\n"
+        "• Flou Gaussien (écart type)"
         "• Netteté (Unsharp Masking)"
+        "• Fusion d'image (avec opacité à 0.5)"
     )
 )
 
